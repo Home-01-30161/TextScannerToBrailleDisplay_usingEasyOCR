@@ -1,51 +1,35 @@
-#import section 67 ๖๗
 import streamlit as st
-import easyocr
-import numpy as np
-import io
-from PIL import Image
+import os
 
-st.set_page_config(page_title="Thai OCR", layout="wide")
-st.title("IMG to text using EasyOCR (Thai&English)")
+st.set_page_config(page_title="OCR Test", layout="wide")
+st.title("🔤 OCR Test")
 
-#Load OCR model for only 1 time
-@st.cache_resource
-def load_ocr_model():
-    with st.spinner("...loading OCR model..."):
-        return easyocr.Reader(['th', 'en'])
+# ✅ ตั้ง cache folder เพื่อไม่ต้อง download ใหม่
+os.environ['EASYOCR_HOME'] = '/tmp/.easyocr'
 
-reader = load_ocr_model() #load
-col1, col2 = st.columns(2) #UI
+st.write("✅ แอปทำงานปกติ")
 
-with col1:
-    st.subheader("Upload")
-    uploaded_file = st.file_uploader("Choose Image (.jpg, .jpeg, .png ONLY NaKrab!)", type=["jpg", "jpeg", "png"])
+# ทดลองโหลด easyocr
+try:
+    import easyocr
+    st.success("✅ EasyOCR imported successfully")
+except Exception as e:
+    st.error(f"❌ Import Error: {e}")
+    st.stop()
+
+# ทดลองโหลด model (มี timeout)
+try:
+    st.info("⏳ กำลัง download model... (อาจใช้เวลา 2-3 นาที)")
     
-    if uploaded_file:
-        image = Image.open(uploaded_file)
-        st.image(image, caption="Uploaded Image", use_column_width=True)
-
-with col2:
-    st.subheader("OCR Results")
-    if uploaded_file:
-        with st.spinner("⏳ Processing IN PROGRESS..."):
-            #transform uploaded file to numpy array
-            img_np = np.array(Image.open(uploaded_file))
-            # Perform OCR
-            result = reader.readtext(img_np)
-            # print
-            ocr_text = ""
-            for detection in result:
-                text = detection[1]
-                confidence = detection[2]
-                ocr_text += f"{text} ({confidence:.2f})\n"
-            
-            st.text_area("detected text:", ocr_text, height=300)
-        
-            # download button
-            st.download_button(
-                label="Download as .txt file",
-                data=ocr_text,
-                file_name="ocr-result.txt",
-                mime="text/plain"
-            )
+    @st.cache_resource
+    def load_model():
+        return easyocr.Reader(['th', 'en'], gpu=False)
+    
+    reader = load_model()
+    st.success("✅ Model loaded successfully")
+    st.write(f"Model: {reader}")
+    
+except Exception as e:
+    st.error(f"❌ Model Error: {e}")
+    import traceback
+    st.write(traceback.format_exc())
